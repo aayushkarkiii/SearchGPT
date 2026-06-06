@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SearchGPT - Smart Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        body {
+            background-color: #ffffff;
+        }
+        .search-shadow {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.04);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .search-shadow:focus-within {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.10), 0 12px 40px rgba(0,0,0,0.06);
+            transform: translateY(-1px);
+        }
+        .link-card {
+            transition: all 0.25s ease;
+        }
+        .link-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #1a1a1a 0%, #4a4a4a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .typing-dot {
+            animation: blink 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+        .suggestion-tag {
+            transition: all 0.2s ease;
+        }
+        .suggestion-tag:hover {
+            background-color: #f5f5f5;
+            border-color: #d0d0d0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-white">
+
+    <!-- Navbar -->
+    <nav class="w-full flex items-center justify-between px-6 py-4 md:px-10 border-b border-gray-100">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
+                <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+            </div>
+            <span class="text-lg font-bold tracking-tight text-black">SearchGPT</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col items-center justify-center px-6 py-12 md:py-20">
+
+        <!-- Logo & Title -->
+        <div class="text-center mb-8 md:mb-12">
+            <div class="inline-flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 md:w-14 md:h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg">
+                    <i data-lucide="search" class="w-6 h-6 md:w-7 md:h-7 text-white"></i>
+                </div>
+            </div>
+            <h1 class="text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-black mb-2">
+                Search<span class="gradient-text">GPT</span>
+            </h1>
+            <p class="text-base md:text-lg text-gray-500 font-light max-w-md mx-auto leading-relaxed">
+                Ask anything. Get instant, intelligent answers powered by AI.
+            </p>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="w-full max-w-2xl mx-auto mb-6">
+            <div class="search-shadow bg-white border border-gray-200 rounded-2xl flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 transition-all">
+                <i data-lucide="search" class="w-5 h-5 text-gray-400 flex-shrink-0"></i>
+                <input
+                    id="searchInput"
+                    type="text"
+                    placeholder="Search anything..."
+                    class="flex-1 bg-transparent text-black placeholder-gray-400 outline-none text-base md:text-lg font-light"
+                    autocomplete="off"
+                />
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button id="linkBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors" title="Add Link Context">
+                        <i data-lucide="link" class="w-4 h-4 text-gray-500"></i>
+                    </button>
+                    <button id="clearBtn" class="p-2 rounded-full hover:bg-gray-100 transition-colors hidden" title="Clear">
+                        <i data-lucide="x" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+                    <button id="searchBtn" class="bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors text-sm font-medium flex items-center gap-1.5">
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">Search</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- URL Input Panel (Slides/Toggles down) -->
+            <div id="urlPanel" class="hidden mt-3 p-4 bg-white border border-gray-200 rounded-xl flex flex-col gap-2 transition-all">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Ask Webpage Context (URL)</span>
+                    <button id="closeUrlPanel" class="text-gray-400 hover:text-black transition-colors" title="Close">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <input
+                        id="urlInput"
+                        type="url"
+                        placeholder="https://example.com/article"
+                        class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-black outline-none focus:border-black transition-colors"
+                    />
+                    <button id="addUrlBtn" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors text-sm font-medium">
+                        Add Context
+                    </button>
+                </div>
+                <div id="urlFeedback" class="hidden text-xs font-medium mt-1 text-gray-500"></div>
+            </div>
+
+            <!-- Active Context Pill -->
+            <div id="activeContextPill" class="hidden mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-700">
+                <i data-lucide="link" class="w-3 h-3 text-black"></i>
+                <span class="font-medium">Active Webpage:</span>
+                <span id="activeContextUrl" class="truncate max-w-[250px] font-semibold text-black"></span>
+                <button id="clearContextBtn" class="p-0.5 rounded-full hover:bg-gray-200 transition-colors ml-1" title="Clear context">
+                    <i data-lucide="x" class="w-3 h-3 text-gray-500 hover:text-black"></i>
+                </button>
+            </div>
+
+            <!-- AI Suggestion -->
+            <div id="aiSuggestion" class="hidden mt-3 px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm text-gray-600 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-black"></i>
+                <span id="suggestionText">AI-powered results loading...</span>
+                <span class="flex gap-0.5 ml-1">
+                    <span class="typing-dot w-1 h-1 bg-gray-400 rounded-full inline-block"></span>
+                    <span class="typing-dot w-1 h-1 bg-gray-400 rounded-full inline-block"></span>
+                    <span class="typing-dot w-1 h-1 bg-gray-400 rounded-full inline-block"></span>
+                </span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-gray-100 px-6 py-4 md:px-10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p class="text-xs text-gray-400">© 2024 SearchGPT. All rights reserved.</p>
+        <div class="flex items-center gap-5">
+            <a href="#" class="text-xs text-gray-400 hover:text-black transition-colors">Privacy</a>
+            <a href="#" class="text-xs text-gray-400 hover:text-black transition-colors">Terms</a>
+            <a href="#" class="text-xs text-gray-400 hover:text-black transition-colors">Contact</a>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
+
